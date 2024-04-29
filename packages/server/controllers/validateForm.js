@@ -1,14 +1,10 @@
 const Yup = require('yup');
+const { formSchema } = require('@whatsapp-clone/common');
 
-const formSchema = Yup.object().shape({
-    username: Yup.string().min(6, "Username too short.").max(24, "Username too long.").required("Username is required."),
-    password: Yup.string().required("Password is required."),
-});
+const validateForm = (req, res, next) => {
+    const formData = req.body;
 
-const validateForm = (req, res) => {
-    const { username, password } = req.body;
-
-    formSchema.validate({ username, password }, { abortEarly: false })
+    formSchema.validate(formData, { abortEarly: false })
         .catch(err => {
             const errors = {};
             if (err.inner.length > 0) {
@@ -16,21 +12,24 @@ const validateForm = (req, res) => {
                     errors[error.path] = error.message;
                 });
             }
-            res.status(422).json({ message: "Form submitted has invalid information.", errors }).send();
-            console.log("Errors", errors)
+            res.status(422).json({
+                message: "Form submitted has invalid information.",
+                status: "Form validation failed with errors.",
+                errors
+            }).send();
         }).then(valid => {
             if (valid) {
-                // res.status(200).json({
-                //     message: "Form Successful",
-                //     token: "<PASSWORD>"
-                // }).send();
                 console.log("Form successful")
-            } else {
-                // res.status(401).json({
-                //     message: "Form Failed"
-                // }).send();
-                console.log("Form failed")
+                next()
             }
+            //  else {
+            //     console.log("Form failed")
+            //     res.status(422).json({
+            //         message: "Form submitted has invalid information.",
+            //         status: "Form validation failed with errors.",
+            //         errors: [{ "form": "Form validation failed with errors." }]
+            //     }).send();
+            // }
         })
 }
 
