@@ -9,7 +9,8 @@ module.exports.handleLogin = (req, res) => {
             data: {
                 loggedIn: true,
                 username: req.session.user.username,
-                id: req.session.user.id
+                id: req.session.user.id,
+                userid: req.session.user.userid
             }
         })
     } else {
@@ -51,14 +52,17 @@ module.exports.attemptLogin = async (req, res) => {
         if (isSamePass) {
             req.session.user = {
                 username: req.body.username,
-                id: potentialLogin.rows[0].id
+                id: potentialLogin.rows[0].id,
+                userid: potentialLogin.rows[0].userid
             }
+
             res.status(201).json({
                 message: "User created successfully.",
                 status: "Success! You're logged in.",
                 data: {
                     username: req.body.username,
                     id: potentialLogin.rows[0].id,
+                    userid: potentialLogin.rows[0].userid,
                     loggedIn: true
                 },
             })

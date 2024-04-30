@@ -6,6 +6,7 @@ const app = express();
 const cors = require("cors");
 const helmet = require('helmet')
 const authRouter = require("./routers/authRouter");
+const { authorizedUser, initializedUser, addFriend, onDisconnect } = require("./controllers/socketController");
 
 const port = 4000;
 require("dotenv").config();
@@ -22,14 +23,17 @@ app.use(express.json()); // Deal with JSON
 app.use(sessionMiddleware);
 app.use("/auth", authRouter)
 
-io.use(wrap(sessionMiddleware));
+io.use(wrap(sessionMiddleware)); // Handle Express session parameters
+io.use(authorizedUser); // Authorized users onlu
 
 io.on("connect", (socket) => {
-    console.log("Socket ID", socket.id);
-    console.log("New connection", socket.request?.session?.user);
-    socket.on("disconnect", () => {
-        console.log("User disconnected");
-    });
+    initializedUser(socket); // Initialize user on Socket connection.
+
+    // Add user on frontend
+    socket.on("add_friend", (friendName, cb) => { addFriend(socket, friendName, cb) });
+
+    // Handles whatever happens on disconnection 
+    socket.on("disconnect", () => onDisconnect(socket));
 });
 
 server.listen(port, () => {
