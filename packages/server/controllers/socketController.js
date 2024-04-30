@@ -17,6 +17,7 @@ module.exports.initializedUser = async (socket) => {
     // console.log("Socket USER", socket.user);
     console.log("New connection from user:", username);
 
+    // Set logged in
     socket.user = { ...socket.request.session.user };
     socket.join(userid)
 
@@ -26,13 +27,26 @@ module.exports.initializedUser = async (socket) => {
         "connected", true
     )
 
+    // Get friend list
     const currentFriendList = await redisClient.lrange(`friends:${username}`, 0, -1);
     const sendFriendList = await parseFriendList(currentFriendList);
 
+    // Get active users
     const friendRooms = sendFriendList.map((friend) => friend.userid);
     socket.to(friendRooms).emit("connected", true, username)
-
     socket.emit("friends", sendFriendList)
+
+    // Get chat messages
+    const fetchMessages = await redisClient.lrange(`chat:${userid}`, 0, -1);
+    const messages = fetchMessages.map((messageString) => {
+        const parsedString = messageString.split(".");
+        return {
+            to: parsedString[0],
+            from: parsedString[1],
+            content: parsedString[2]
+        }
+    })
+    if (messages?.length > 0) socket.emit("messages", messages)
 };
 
 module.exports.addFriend = async (socket, friendName, cb) => {
@@ -88,6 +102,23 @@ module.exports.onDisconnect = async (socket) => {
 
     console.log(`User ${username} disconnected!`);
 }
+
+module.exports.messageDirect = async (socket, message) => {
+    console.log("DM!", message)
+    const { userid } = socket.user;
+    const { to, content } = message;
+    const messageData = { from: userid, to, content };
+
+    const messageString = [messageData.to, messageData.from, messageData.content].join(".")
+
+    console.log("DM NEW", messageData)
+    await redisClient.lpush(`chat:${messageData.to}`, messageString);
+    await redisClient.lpush(`chat:${messageData.from}`, messageString);
+
+    console.log("EMITING", messageData.to, messageString)
+    socket.to(messageData.to).emit("message:direct", messageData)
+    // cb({ done: true })
+};
 
 const parseFriendList = async (friendList) => {
     const newFriendList = [];

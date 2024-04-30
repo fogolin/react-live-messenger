@@ -6,7 +6,7 @@ const app = express();
 const cors = require("cors");
 const helmet = require('helmet')
 const authRouter = require("./routers/authRouter");
-const { authorizedUser, initializedUser, addFriend, onDisconnect } = require("./controllers/socketController");
+const { authorizedUser, initializedUser, addFriend, onDisconnect, messageDirect } = require("./controllers/socketController");
 
 const port = 4000;
 require("dotenv").config();
@@ -27,10 +27,14 @@ io.use(wrap(sessionMiddleware)); // Handle Express session parameters
 io.use(authorizedUser); // Authorized users onlu
 
 io.on("connect", (socket) => {
-    initializedUser(socket); // Initialize user on Socket connection.
+    // Initialize user on Socket connection.
+    initializedUser(socket);
+
+    // On messages
+    socket.on("message:direct", (message) => messageDirect(socket, message))
 
     // Add user on frontend
-    socket.on("add_friend", (friendName, cb) => { addFriend(socket, friendName, cb) });
+    socket.on("add_friend", (friendName, cb) => addFriend(socket, friendName, cb));
 
     // Handles whatever happens on disconnection 
     socket.on("disconnect", () => onDisconnect(socket));
