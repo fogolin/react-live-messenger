@@ -1,9 +1,8 @@
 import { AccountContext } from "../AccountContext";
-
 const { useEffect, useContext } = require("react");
-const { default: socket } = require("../../socket");
+// const { default: socket } = require("../../socket");
 
-const useSocketSetup = (setFriendList, setMessages) => {
+const useSocketSetup = (setFriendList, setMessages, socket) => {
 	const { setUser } = useContext(AccountContext);
 
 	useEffect(() => {
@@ -31,7 +30,7 @@ const useSocketSetup = (setFriendList, setMessages) => {
 		});
 
 		socket.on("connect_error", () => {
-			console.log("The connection failed!");
+			// console.log("The connection failed!");
 			setUser({ loggedIn: false });
 		});
 
@@ -49,7 +48,7 @@ const useSocketSetup = (setFriendList, setMessages) => {
 				socket.off(key);
 			}
 		};
-	}, [setUser, setFriendList, setMessages]);
+	}, [setUser, setFriendList, setMessages, socket]);
 };
 
 export default useSocketSetup;

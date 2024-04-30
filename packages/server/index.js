@@ -1,5 +1,9 @@
 const { Server } = require("socket.io");
-const { corsOptions, sessionMiddleware, wrap } = require("./controllers/serverController");
+const {
+    corsOptions,
+    // sessionMiddleware,
+    // wrap
+} = require("./controllers/serverController");
 const express = require('express')
 const app = express();
 
@@ -20,10 +24,10 @@ app.use(cors(corsOptions)); // Cors
 
 app.use(express.json()); // Deal with JSON
 
-app.use(sessionMiddleware);
+// app.use(sessionMiddleware);
 app.use("/auth", authRouter)
 
-io.use(wrap(sessionMiddleware)); // Handle Express session parameters
+// io.use(wrap(sessionMiddleware)); // Handle Express session parameters
 io.use(authorizedUser); // Authorized users onlu
 
 io.on("connect", (socket) => {

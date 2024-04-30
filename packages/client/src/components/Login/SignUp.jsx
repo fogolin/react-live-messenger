@@ -40,13 +40,15 @@ export const SignUp = () => {
 						return res.json();
 					})
 					.then((data) => {
-						console.log("DATA", data);
 						if (!data) return;
-						setUser({ ...data.data });
+						setUser({ ...data.data, token: data.token });
 
 						if (data?.errors?.length > 0) {
 							setError(data.status);
-						} else if (data.data.loggedIn) navigate("/home");
+						} else if (data.data.loggedIn) {
+							localStorage.setItem("token", data.token);
+							navigate("/home");
+						}
 					});
 			}}
 		>

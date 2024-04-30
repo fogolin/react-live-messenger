@@ -11,13 +11,16 @@ import {
 } from "@chakra-ui/react";
 import TextField from "../TextField";
 import { Form, Formik } from "formik";
-import socket from "../../socket";
+// import socket from "../../socket";
 import { useCallback, useContext, useState } from "react";
-import { FriendContext } from "./Home";
+import { FriendContext, SocketContext } from "./Home";
 
 export const AddFriendModal = ({ isOpen, onClose }) => {
 	const [error, setError] = useState("");
 	const { setFriendList } = useContext(FriendContext);
+
+	const { socket } = useContext(SocketContext);
+
 	const closeModal = useCallback(() => {
 		onClose();
 		setError("");

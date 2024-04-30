@@ -1,24 +1,38 @@
+const { jwtVerify } = require("../jwt/jwtAuth");
 const redisClient = require("../redis");
 
 module.exports.authorizedUser = (socket, next) => {
-    if (!socket.request.session || !socket.request.session?.user) {
-        console.log("Bad request!")
-        return next(new Error("Unauthorized user."));
-    } else {
-        socket.user = { ...socket.request.session.user };
-        redisClient.hset(`userid:${socket.user.username}`, "userid", socket.user.userid)
-        next()
-    }
+    // if (!socket.request.session || !socket.request.session?.user) {
+    //     console.log("Bad request!")
+    //     return next(new Error("Unauthorized user."));
+    // } else {
+    //     socket.user = { ...socket.request.session.user };
+    //     redisClient.hset(`userid:${socket.user.username}`, "userid", socket.user.userid)
+    //     next()
+    // }
+
+    // console.log(socket.handshake.auth)
+    const token = socket.handshake.auth.token;
+    console.log("Token on IO", token)
+
+    jwtVerify(token)
+        .then((decoded) => {
+            socket.user = { ...decoded };
+            next();
+        })
+        .catch((err) => {
+            console.log("Bad request!", err)
+            return next(new Error("Unauthorized user."));
+        })
 };
 
 module.exports.initializedUser = async (socket) => {
-    const { username, userid } = socket.request.session.user;
-
-    // console.log("Socket USER", socket.user);
+    // const { username, userid } = socket.request.session.user;
+    const { username, userid } = socket.user;
     console.log("New connection from user:", username);
 
     // Set logged in
-    socket.user = { ...socket.request.session.user };
+    // socket.user = { ...socket.request.session.user };
     socket.join(userid)
 
     await redisClient.hset(
@@ -104,18 +118,15 @@ module.exports.onDisconnect = async (socket) => {
 }
 
 module.exports.messageDirect = async (socket, message) => {
-    console.log("DM!", message)
     const { userid } = socket.user;
     const { to, content } = message;
     const messageData = { from: userid, to, content };
 
     const messageString = [messageData.to, messageData.from, messageData.content].join(".")
 
-    console.log("DM NEW", messageData)
     await redisClient.lpush(`chat:${messageData.to}`, messageString);
     await redisClient.lpush(`chat:${messageData.from}`, messageString);
 
-    console.log("EMITING", messageData.to, messageString)
     socket.to(messageData.to).emit("message:direct", messageData)
     // cb({ done: true })
 };
@@ -131,8 +142,6 @@ const parseFriendList = async (friendList) => {
             connected: friendConnected
         })
     }
-
-    console.log("FRIEND LIST", newFriendList)
 
     return newFriendList
 }
